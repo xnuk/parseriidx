@@ -1,0 +1,11 @@
+{
+	"name": "iidx-parser",
+	"description": "parse query which finds recommend song",
+	"version": "0.0.0-pre-alpha-beta-gamma-theta-2015-09-09-12-28-KST",
+	"license": "WTFPL",
+	"main": "parser.jison",
+	"dependencies": {"tap": "*"},
+	"scripts": {
+		"test": "node ./test.js"
+	}
+}
