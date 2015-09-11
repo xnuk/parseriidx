@@ -6,6 +6,7 @@
 "노말"|"노멀"  return 'NORMAL'
 "하드"  return 'HARD'
 "이중계단"|"겹계단"|"고비용"|"계단"|"연속스크"|"연스크"|"스크발광"|"스크밀집"|"스크"|"폭타"|"동시치기"|"동치"|"축연타"|"축"|"즈레"|"트릴"|"변속"|"초살"|"중살"|"후살"|"데님"|"대칭"|"롱노트"|"롱놋"|"백스핀"  return 'TYPE'
+"!"  return 'NOT'
 "("  return '('
 ")"  return ')'
 \.\.+  return 'TO'
@@ -143,12 +144,19 @@
 	And.prototype.toString=function(){
 		return `And[${this.opd.join(', ')}]`
 	}
-	function Or(a,b){
+	function Or(){
 		this.opd=[].concat.apply([], [].slice.call(arguments).map(function(v){return (v instanceof Or)?v.opd:v}))
 	}
 	Or.prototype=Object.create(null)
 	Or.prototype.toString=function(){
 		return `Or[${this.opd.join(', ')}]`
+	}
+	function Not(a){
+		this.val=a
+	}
+	Not.prototype=Object.create(null)
+	Not.prototype.toString=function(){
+		return `Not(${this.val})`
 	}
 	function and(a,b){
 		if(a===b) return a
@@ -173,8 +181,13 @@
 		if(a===b) return a
 		return new Or(a,b)
 	}
+	function not(a){
+		if(a instanceof Not) return a.val
+		return new Not(a)
+	}
 %}
 
+%left NOT
 %left OR
 %left WS
 %left ','
@@ -193,6 +206,8 @@ e
 	| TYPE
 		{$$=Type($1)}
 	| bracket
+		{$$=$1}
+	| not
 		{$$=$1}
 	| e ',' e
 		{$$=or($1, $3)}
@@ -241,3 +256,9 @@ num
 		{$$=new Num(yytext)}
 	;
 
+not
+	: NOT e
+		{$$=not($2)}
+	| NOT WS e
+		{$$=not($3)}
+	;
