@@ -29,6 +29,9 @@
 
 	function E(){}
 	E.prototype=Object.create(null)
+	E.prototype.f=function(){
+		throw new Error(`f isn't implemented for ${this.name}!`)
+	}
 
 	function Ix(a, b){ // Num(sublevel!=null)
 		if(a.sublevel==null) throw Error("sublevel should not be null")
@@ -59,6 +62,13 @@
 		if(ix.min<=this.min && ix.max>=this.max) return Subset
 		if(ix.min>=this.min && ix.max<=this.max) return Superset
 		return 
+	}
+	Ix.prototype.f=function(v){
+		if(v.level>this.min.level && v.level<this.max.level) return true
+		var min=(v.level===this.min.level && v[this.prop]>=this.min.sublevel),
+			max=(v.level===this.max.level && v[this.prop]<=this.max.sublevel)
+		if(this.max.level===this.min.level) return min && max
+		return min || max
 	}
 
 	function ix(a, b){ // Num or Ix
@@ -112,6 +122,7 @@
 	NmIx.prototype.toString=function(){
 		return `NmIx(${this.min}, ${this.max})`
 	}
+	NmIx.prototype.prop="normal"
 
 	function HdIx(a, b){
 		this.min=a
@@ -122,6 +133,7 @@
 	HdIx.prototype.toString=function(){
 		return `HdIx(${this.min}, ${this.max})`
 	}
+	HdIx.prototype.prop="hard"
 
 	function Type(str){
 		this.val=str
@@ -130,6 +142,7 @@
 	Type.prototype=Object.create(E.prototype)
 	Type.prototype.constructor=Type
 	Type.prototype.toString=function(){return this.val}
+	Type.prototype.f=function(v){return -1!==v.prop.indexOf(this.val)}
 
 	;['폭타','계단','동치','스크','스크밀집','축','축연타','즈레','트릴','변속','초살','중살','후살','데님','대칭','겹계단','롱놋','백스핀'].forEach(v=>{Type[v]=new Type(v)})
 	Type['고비용']=Type['이중계단']=Type['겹계단']
@@ -137,27 +150,32 @@
 	Type['연스크']=Type['연속스크']=Type['스크발광']=Type['스크밀집']
 	Type['동시치기']=Type['동치']
 
-	function And(){
-		this.opd=[].concat.apply([], [].slice.call(arguments).map(function(v){return (v instanceof And)?v.opd:v}))
+	function And(a){
+		var arr=(a instanceof Array)?a:[].slice.call(arguments)
+		this.opd=[].concat.apply([], arr.map(function(v){return (v instanceof And)?v.opd:v}))
 	}
-	And.prototype=Object.create(null)
+	And.prototype=Object.create(E.prototype)
 	And.prototype.toString=function(){
 		return `And[${this.opd.join(', ')}]`
 	}
-	function Or(){
-		this.opd=[].concat.apply([], [].slice.call(arguments).map(function(v){return (v instanceof Or)?v.opd:v}))
+	And.prototype.f=function(v){return this.opd.every(e=>e.f(v))}
+	function Or(a){
+		var arr=(a instanceof Array)?a:[].slice.call(arguments)
+		this.opd=[].concat.apply([], arr.map(function(v){return (v instanceof Or)?v.opd:v}))
 	}
-	Or.prototype=Object.create(null)
+	Or.prototype=Object.create(E.prototype)
 	Or.prototype.toString=function(){
 		return `Or[${this.opd.join(', ')}]`
 	}
+	Or.prototype.f=function(v){return this.opd.some(e=>e.f(v))}
 	function Not(a){
 		this.val=a
 	}
-	Not.prototype=Object.create(null)
+	Not.prototype=Object.create(E.prototype)
 	Not.prototype.toString=function(){
-		return `Not(${this.val})`
+		return `!${this.val}`
 	}
+	Not.prototype.f=function(v){return !e.f(v)}
 	function and(a,b){
 		if(a===b) return a
 		return new And(a,b)
@@ -179,10 +197,12 @@
 	}
 	function or(a,b){
 		if(a===b) return a
-		return new Or(a,b)
+		return new Or(a, b)
 	}
 	function not(a){
 		if(a instanceof Not) return a.val
+		//if(a instanceof Or) return new And(a.opd.map(not))
+		//if(a instanceof And) return new Or(a.opd.map(not))
 		return new Not(a)
 	}
 %}
@@ -257,8 +277,16 @@ num
 	;
 
 not
-	: NOT e
+	: NOT bracket
 		{$$=not($2)}
-	| NOT WS e
+	| NOT TYPE
+		{$$=not($2)}
+	| NOT normalhard
+		{$$=not($2)}
+	| NOT WS bracket
+		{$$=not($3)}
+	| NOT WS TYPE
+		{$$=not($3)}
+	| NOT WS normalhard
 		{$$=not($3)}
 	;
