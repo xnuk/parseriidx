@@ -175,7 +175,7 @@
 	Not.prototype.toString=function(){
 		return `!${this.val}`
 	}
-	Not.prototype.f=function(v){return !e.f(v)}
+	Not.prototype.f=function(v){return !this.val.f(v)}
 	function and(a,b){
 		if(a===b) return a
 		return new And(a,b)
