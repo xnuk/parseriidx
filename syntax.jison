@@ -280,13 +280,13 @@ not
 	: NOT bracket
 		{$$=not($2)}
 	| NOT TYPE
-		{$$=not($2)}
+		{$$=not(Type($2))}
 	| NOT normalhard
 		{$$=not($2)}
 	| NOT WS bracket
 		{$$=not($3)}
 	| NOT WS TYPE
-		{$$=not($3)}
+		{$$=not(Type($3))}
 	| NOT WS normalhard
 		{$$=not($3)}
 	;
